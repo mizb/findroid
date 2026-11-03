@@ -7,7 +7,7 @@ enum class SortBy(val sortString: String) {
     DATE_ADDED("DateCreated"),
     DATE_PLAYED("DatePlayed"),
     RELEASE_DATE("PremiereDate"),
-    ;
+    SERIES_DATE_PLAYED("SeriesDatePlayed");
 
     companion object {
         val defaultValue = NAME
@@ -15,7 +15,7 @@ enum class SortBy(val sortString: String) {
         fun fromString(string: String): SortBy {
             return try {
                 valueOf(string)
-            } catch (e: IllegalArgumentException) {
+            } catch (_: IllegalArgumentException) {
                 defaultValue
             }
         }

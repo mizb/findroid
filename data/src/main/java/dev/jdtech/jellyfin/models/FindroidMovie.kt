@@ -2,11 +2,10 @@ package dev.jdtech.jellyfin.models
 
 import dev.jdtech.jellyfin.database.ServerDatabaseDao
 import dev.jdtech.jellyfin.repository.JellyfinRepository
-import org.jellyfin.sdk.model.api.BaseItemDto
-import org.jellyfin.sdk.model.api.BaseItemPerson
-import org.jellyfin.sdk.model.api.PlayAccess
 import java.time.LocalDateTime
 import java.util.UUID
+import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.PlayAccess
 
 data class FindroidMovie(
     override val id: UUID,
@@ -21,7 +20,7 @@ data class FindroidMovie(
     override val runtimeTicks: Long,
     override val playbackPositionTicks: Long,
     val premiereDate: LocalDateTime?,
-    val people: List<BaseItemPerson>,
+    val people: List<FindroidItemPerson>,
     val genres: List<String>,
     val communityRating: Float?,
     val officialRating: String?,
@@ -31,7 +30,8 @@ data class FindroidMovie(
     val trailer: String?,
     override val unplayedItemCount: Int? = null,
     override val images: FindroidImages,
-    override val chapters: List<FindroidChapter>?,
+    override val chapters: List<FindroidChapter>,
+    override val trickplayInfo: Map<String, FindroidTrickplayInfo>?,
 ) : FindroidItem, FindroidSources
 
 suspend fun BaseItemDto.toFindroidMovie(
@@ -49,16 +49,16 @@ suspend fun BaseItemDto.toFindroidMovie(
         originalTitle = originalTitle,
         overview = overview.orEmpty(),
         sources = sources,
-        played = userData?.played ?: false,
-        favorite = userData?.isFavorite ?: false,
+        played = userData?.played == true,
+        favorite = userData?.isFavorite == true,
         canPlay = playAccess != PlayAccess.NONE,
-        canDownload = canDownload ?: false,
+        canDownload = canDownload == true,
         runtimeTicks = runTimeTicks ?: 0,
         playbackPositionTicks = userData?.playbackPositionTicks ?: 0,
         premiereDate = premiereDate,
-        communityRating = communityRating?.let { Math.round(it * 10).div(10F) },
+        communityRating = communityRating,
         genres = genres ?: emptyList(),
-        people = people ?: emptyList(),
+        people = people?.map { it.toFindroidPerson(jellyfinRepository) } ?: emptyList(),
         officialRating = officialRating,
         status = status ?: "Ended",
         productionYear = productionYear,
@@ -66,11 +66,27 @@ suspend fun BaseItemDto.toFindroidMovie(
         trailer = remoteTrailers?.getOrNull(0)?.url,
         images = toFindroidImages(jellyfinRepository),
         chapters = toFindroidChapters(),
+        trickplayInfo =
+            trickplay
+                ?.mapNotNull { (width, info) ->
+                    info?.get(info.keys.max())?.toFindroidTrickplayInfo()?.let { width to it }
+                }
+                ?.toMap(),
     )
 }
 
-fun FindroidMovieDto.toFindroidMovie(database: ServerDatabaseDao, userId: UUID): FindroidMovie {
+suspend fun FindroidMovieDto.toFindroidMovie(
+    database: ServerDatabaseDao,
+    userId: UUID,
+): FindroidMovie {
     val userData = database.getUserDataOrCreateNew(id, userId)
+    val sources = database.getSources(id).map { it.toFindroidSource(database) }
+    val trickplayInfos = mutableMapOf<String, FindroidTrickplayInfo>()
+    for (source in sources) {
+        database.getTrickplayInfo(source.id)?.toFindroidTrickplayInfo()?.let {
+            trickplayInfos[source.id] = it
+        }
+    }
     return FindroidMovie(
         id = id,
         name = name,
@@ -92,7 +108,8 @@ fun FindroidMovieDto.toFindroidMovie(database: ServerDatabaseDao, userId: UUID):
         canPlay = true,
         sources = database.getSources(id).map { it.toFindroidSource(database) },
         trailer = null,
-        images = FindroidImages(),
-        chapters = chapters,
+        images = toLocalFindroidImages(itemId = id),
+        chapters = chapters ?: emptyList(),
+        trickplayInfo = trickplayInfos,
     )
 }

@@ -1,61 +1,43 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.androidx.room3)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.ktlint)
 }
+
+java { toolchain { languageVersion = Versions.JAVA } }
 
 android {
     namespace = "dev.jdtech.jellyfin.data"
-    compileSdk = Versions.compileSdk
-    buildToolsVersion = Versions.buildTools
+    compileSdk = Versions.COMPILE_SDK
+    buildToolsVersion = Versions.BUILD_TOOLS
 
     defaultConfig {
-        minSdk = Versions.minSdk
+        minSdk = Versions.MIN_SDK
 
-        buildConfigField("int", "VERSION_CODE", Versions.appCode.toString())
-        buildConfigField("String", "VERSION_NAME", "\"${Versions.appName}\"")
+        buildConfigField("int", "VERSION_CODE", Versions.APP_CODE.toString())
+        buildConfigField("String", "VERSION_NAME", "\"${Versions.APP_NAME}\"")
 
         consumerProguardFile("proguard-rules.pro")
-
-        ksp {
-            arg("room.schemaLocation", "$projectDir/schemas")
-            arg("room.generateKotlin", "true")
-        }
     }
 
     buildTypes {
-        named("release") {
-            isMinifyEnabled = false
-        }
-        register("staging") {
-            initWith(getByName("release"))
-        }
+        named("release") { isMinifyEnabled = false }
+        register("staging") { initWith(getByName("release")) }
     }
 
-    compileOptions {
-        sourceCompatibility = Versions.java
-        targetCompatibility = Versions.java
-    }
-
-    buildFeatures {
-        buildConfig = true
-    }
+    buildFeatures { buildConfig = true }
 }
 
-ktlint {
-    version.set(Versions.ktlint)
-    android.set(true)
-    ignoreFailures.set(false)
-}
+room3 { schemaDirectory("$projectDir/schemas") }
 
 dependencies {
-    implementation(projects.preferences)
+    implementation(projects.settings)
     implementation(libs.androidx.paging)
-    implementation(libs.androidx.room.runtime)
-    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room3.runtime)
+    ksp(libs.androidx.room3.compiler)
     implementation(libs.jellyfin.core)
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.timber)
 }

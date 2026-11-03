@@ -1,33 +1,43 @@
 package dev.jdtech.jellyfin
 
 import android.app.Application
+import android.os.Build
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
-import coil.ImageLoader
-import coil.ImageLoaderFactory
-import coil.decode.SvgDecoder
-import coil.disk.DiskCache
-import coil.request.CachePolicy
+import androidx.work.Constraints
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.SingletonImageLoader
+import coil3.annotation.ExperimentalCoilApi
+import coil3.disk.DiskCache
+import coil3.network.cachecontrol.CacheControlCacheStrategy
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import coil3.request.CachePolicy
+import coil3.request.crossfade
+import coil3.svg.SvgDecoder
 import com.google.android.material.color.DynamicColors
-import com.google.android.material.color.DynamicColorsOptions
 import dagger.hilt.android.HiltAndroidApp
-import timber.log.Timber
+import dev.jdtech.jellyfin.settings.domain.AppPreferences
+import dev.jdtech.jellyfin.work.MpvCleanupWorker
+import dev.jdtech.jellyfin.work.SyncWorker
 import javax.inject.Inject
-import dev.jdtech.jellyfin.core.R as CoreR
+import kotlin.time.ExperimentalTime
+import okio.Path.Companion.toOkioPath
+import timber.log.Timber
 
 @HiltAndroidApp
-class BaseApplication : Application(), Configuration.Provider, ImageLoaderFactory {
-    @Inject
-    lateinit var appPreferences: AppPreferences
+class BaseApplication : Application(), Configuration.Provider, SingletonImageLoader.Factory {
+    @Inject lateinit var appPreferences: AppPreferences
 
-    @Inject
-    lateinit var workerFactory: HiltWorkerFactory
+    @Inject lateinit var workerFactory: HiltWorkerFactory
 
     override val workManagerConfiguration: Configuration
-        get() = Configuration.Builder()
-            .setWorkerFactory(workerFactory)
-            .build()
+        get() = Configuration.Builder().setWorkerFactory(workerFactory).build()
 
     override fun onCreate() {
         super.onCreate()
@@ -36,32 +46,74 @@ class BaseApplication : Application(), Configuration.Provider, ImageLoaderFactor
             Timber.plant(Timber.DebugTree())
         }
 
-        when (appPreferences.theme) {
-            "system" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-            "light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            val mode =
+                when (appPreferences.getValue(appPreferences.theme)) {
+                    "system" -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                    "light" -> AppCompatDelegate.MODE_NIGHT_NO
+                    "dark" -> AppCompatDelegate.MODE_NIGHT_YES
+                    else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                }
+            AppCompatDelegate.setDefaultNightMode(mode)
         }
 
-        if (appPreferences.dynamicColors) {
-            val dynamicColorsOptions = DynamicColorsOptions.Builder()
-                .setThemeOverlay(CoreR.style.ThemeOverlay_Findroid_DynamicColors)
-                .build()
-            DynamicColors.applyToActivitiesIfAvailable(this, dynamicColorsOptions)
+        if (appPreferences.getValue(appPreferences.dynamicColors)) {
+            DynamicColors.applyToActivitiesIfAvailable(this)
+        }
+
+        val workManager = WorkManager.getInstance(applicationContext)
+
+        scheduleUserDataSync(workManager)
+
+        if (!appPreferences.getValue(appPreferences.mpvMigrated)) {
+            scheduleMpvCleanup(workManager)
         }
     }
 
-    override fun newImageLoader(): ImageLoader {
-        return ImageLoader.Builder(this)
+    @OptIn(ExperimentalCoilApi::class, ExperimentalTime::class)
+    override fun newImageLoader(context: PlatformContext): ImageLoader {
+        return ImageLoader.Builder(context)
             .components {
+                add(OkHttpNetworkFetcherFactory(cacheStrategy = { CacheControlCacheStrategy() }))
                 add(SvgDecoder.Factory())
             }
-            .diskCachePolicy(if (appPreferences.imageCache) CachePolicy.ENABLED else CachePolicy.DISABLED)
+            .diskCachePolicy(
+                if (appPreferences.getValue(appPreferences.imageCache)) CachePolicy.ENABLED
+                else CachePolicy.DISABLED
+            )
             .diskCache {
                 DiskCache.Builder()
-                    .directory(this.cacheDir.resolve("image_cache"))
-                    .maxSizeBytes(appPreferences.imageCacheSize * 1024L * 1024)
+                    .directory(context.cacheDir.resolve("image_cache").toOkioPath())
+                    .maxSizeBytes(
+                        appPreferences.getValue(appPreferences.imageCacheSize) * 1024L * 1024
+                    )
                     .build()
             }
+            .crossfade(true)
             .build()
+    }
+
+    private fun scheduleUserDataSync(workManager: WorkManager) {
+        val constraints =
+            Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()
+
+        val syncWorkRequest =
+            OneTimeWorkRequestBuilder<SyncWorker>().setConstraints(constraints).build()
+
+        workManager.enqueueUniqueWork(
+            uniqueWorkName = "syncUserData",
+            existingWorkPolicy = ExistingWorkPolicy.KEEP,
+            request = syncWorkRequest,
+        )
+    }
+
+    private fun scheduleMpvCleanup(workManager: WorkManager) {
+        val cleanupRequest = OneTimeWorkRequestBuilder<MpvCleanupWorker>().build()
+
+        workManager.enqueueUniqueWork(
+            uniqueWorkName = "mpv_cleanup",
+            existingWorkPolicy = ExistingWorkPolicy.KEEP,
+            request = cleanupRequest,
+        )
     }
 }

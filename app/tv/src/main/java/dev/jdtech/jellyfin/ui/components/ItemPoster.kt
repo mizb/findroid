@@ -6,24 +6,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
-import coil.compose.AsyncImage
+import coil3.compose.AsyncImage
 import dev.jdtech.jellyfin.models.FindroidEpisode
 import dev.jdtech.jellyfin.models.FindroidItem
 import dev.jdtech.jellyfin.models.FindroidMovie
 
 enum class Direction {
-    HORIZONTAL, VERTICAL
+    HORIZONTAL,
+    VERTICAL,
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun ItemPoster(
-    item: FindroidItem,
-    direction: Direction,
-    modifier: Modifier = Modifier,
-) {
+fun ItemPoster(item: FindroidItem, direction: Direction, modifier: Modifier = Modifier) {
     var imageUri = item.images.primary
 
     when (direction) {
@@ -41,11 +36,10 @@ fun ItemPoster(
         model = imageUri,
         contentDescription = null,
         contentScale = ContentScale.Crop,
-        modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(if (direction == Direction.HORIZONTAL) 1.77f else 0.66f)
-            .background(
-                MaterialTheme.colorScheme.surface,
-            ),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .aspectRatio(if (direction == Direction.HORIZONTAL) 1.77f else 0.66f)
+                .background(MaterialTheme.colorScheme.surface),
     )
 }

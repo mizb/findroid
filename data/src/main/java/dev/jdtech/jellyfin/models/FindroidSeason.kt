@@ -2,9 +2,9 @@ package dev.jdtech.jellyfin.models
 
 import dev.jdtech.jellyfin.database.ServerDatabaseDao
 import dev.jdtech.jellyfin.repository.JellyfinRepository
+import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.PlayAccess
-import java.util.UUID
 
 data class FindroidSeason(
     override val id: UUID,
@@ -24,21 +24,19 @@ data class FindroidSeason(
     override val playbackPositionTicks: Long = 0L,
     override val unplayedItemCount: Int?,
     override val images: FindroidImages,
-    override val chapters: List<FindroidChapter>? = null,
+    override val chapters: List<FindroidChapter> = emptyList(),
 ) : FindroidItem
 
-fun BaseItemDto.toFindroidSeason(
-    jellyfinRepository: JellyfinRepository,
-): FindroidSeason {
+fun BaseItemDto.toFindroidSeason(jellyfinRepository: JellyfinRepository): FindroidSeason {
     return FindroidSeason(
         id = id,
         name = name.orEmpty(),
         originalTitle = originalTitle,
         overview = overview.orEmpty(),
-        played = userData?.played ?: false,
-        favorite = userData?.isFavorite ?: false,
+        played = userData?.played == true,
+        favorite = userData?.isFavorite == true,
         canPlay = playAccess != PlayAccess.NONE,
-        canDownload = canDownload ?: false,
+        canDownload = canDownload == true,
         unplayedItemCount = userData?.unplayedItemCount,
         indexNumber = indexNumber ?: 0,
         sources = emptyList(),
@@ -49,7 +47,10 @@ fun BaseItemDto.toFindroidSeason(
     )
 }
 
-fun FindroidSeasonDto.toFindroidSeason(database: ServerDatabaseDao, userId: UUID): FindroidSeason {
+suspend fun FindroidSeasonDto.toFindroidSeason(
+    database: ServerDatabaseDao,
+    userId: UUID,
+): FindroidSeason {
     val userData = database.getUserDataOrCreateNew(id, userId)
     return FindroidSeason(
         id = id,
@@ -66,6 +67,6 @@ fun FindroidSeasonDto.toFindroidSeason(database: ServerDatabaseDao, userId: UUID
         episodes = emptyList(),
         seriesId = seriesId,
         seriesName = seriesName,
-        images = FindroidImages(),
+        images = toLocalFindroidImages(itemId = id),
     )
 }

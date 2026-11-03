@@ -1,28 +1,26 @@
 package dev.jdtech.jellyfin.models
 
-import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Index
-import androidx.room.PrimaryKey
+import androidx.room3.Entity
+import androidx.room3.ForeignKey
+import androidx.room3.Index
+import androidx.room3.PrimaryKey
 import java.util.UUID
 
 @Entity(
     tableName = "seasons",
-    foreignKeys = [
-        ForeignKey(
-            entity = FindroidShowDto::class,
-            parentColumns = arrayOf("id"),
-            childColumns = arrayOf("seriesId"),
-            onDelete = ForeignKey.CASCADE,
-        ),
-    ],
-    indices = [
-        Index("seriesId"),
-    ],
+    foreignKeys =
+        [
+            ForeignKey(
+                entity = FindroidShowDto::class,
+                parentColumns = arrayOf("id"),
+                childColumns = arrayOf("seriesId"),
+                onDelete = ForeignKey.CASCADE,
+            )
+        ],
+    indices = [Index("seriesId")],
 )
 data class FindroidSeasonDto(
-    @PrimaryKey
-    val id: UUID,
+    @PrimaryKey val id: UUID,
     val seriesId: UUID,
     val name: String,
     val seriesName: String,

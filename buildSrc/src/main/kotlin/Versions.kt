@@ -1,16 +1,13 @@
-import org.gradle.api.JavaVersion
+import org.gradle.jvm.toolchain.JavaLanguageVersion
 
 object Versions {
-    const val appCode = 25
-    const val appName = "0.14.2"
+    const val APP_CODE = 34
+    const val APP_NAME = "1.2.0"
 
-    const val compileSdk = 34
-    const val buildTools = "34.0.0"
-    const val minSdk = 28
-    const val targetSdk = 34
+    const val COMPILE_SDK = 37
+    const val TARGET_SDK = 37
+    const val MIN_SDK = 29
+    const val BUILD_TOOLS = "37.0.0"
 
-    val java = JavaVersion.VERSION_17
-
-    const val composeCompiler = "1.5.12"
-    const val ktlint = "0.50.0"
+    val JAVA = JavaLanguageVersion.of(17)
 }

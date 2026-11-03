@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -28,8 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Tab
@@ -37,52 +37,60 @@ import androidx.tv.material3.TabDefaults
 import androidx.tv.material3.TabRow
 import androidx.tv.material3.TabRowDefaults
 import androidx.tv.material3.Text
-import com.ramcosta.composedestinations.annotation.Destination
-import com.ramcosta.composedestinations.annotation.RootNavGraph
-import com.ramcosta.composedestinations.navigation.DestinationsNavigator
-import com.ramcosta.composedestinations.navigation.EmptyDestinationsNavigator
-import dev.jdtech.jellyfin.destinations.SettingsScreenDestination
+import dev.jdtech.jellyfin.core.R as CoreR
+import dev.jdtech.jellyfin.core.presentation.dummy.dummyServer
+import dev.jdtech.jellyfin.core.presentation.dummy.dummyUser
+import dev.jdtech.jellyfin.models.CollectionType
 import dev.jdtech.jellyfin.models.User
+import dev.jdtech.jellyfin.presentation.film.HomeScreen
+import dev.jdtech.jellyfin.presentation.film.MediaScreen
+import dev.jdtech.jellyfin.presentation.theme.FindroidTheme
+import dev.jdtech.jellyfin.presentation.theme.spacings
 import dev.jdtech.jellyfin.ui.components.LoadingIndicator
 import dev.jdtech.jellyfin.ui.components.PillBorderIndicator
 import dev.jdtech.jellyfin.ui.components.ProfileButton
-import dev.jdtech.jellyfin.ui.dummy.dummyServer
-import dev.jdtech.jellyfin.ui.dummy.dummyUser
-import dev.jdtech.jellyfin.ui.theme.FindroidTheme
-import dev.jdtech.jellyfin.ui.theme.spacings
 import dev.jdtech.jellyfin.viewmodels.MainViewModel
-import dev.jdtech.jellyfin.core.R as CoreR
+import java.util.UUID
+import org.jellyfin.sdk.model.api.BaseItemKind
 
-@RootNavGraph(start = true)
-@Destination
 @Composable
 fun MainScreen(
+    navigateToSettings: () -> Unit,
+    navigateToLibrary: (libraryId: UUID, libraryName: String, libraryType: CollectionType) -> Unit,
+    navigateToMovie: (itemId: UUID) -> Unit,
+    navigateToShow: (itemId: UUID) -> Unit,
+    navigateToPlayer: (itemId: UUID, itemKind: BaseItemKind) -> Unit,
     mainViewModel: MainViewModel = hiltViewModel(),
-    navigator: DestinationsNavigator,
 ) {
     val delegatedUiState by mainViewModel.uiState.collectAsState()
 
+    LaunchedEffect(true) { mainViewModel.loadServerAndUser() }
+
     MainScreenLayout(
         uiState = delegatedUiState,
-        navigator = navigator,
+        navigateToSettings = navigateToSettings,
+        navigateToLibrary = navigateToLibrary,
+        navigateToMovie = navigateToMovie,
+        navigateToShow = navigateToShow,
+        navigateToPlayer = navigateToPlayer,
     )
 }
 
-enum class TabDestination(
-    @DrawableRes val icon: Int,
-    @StringRes val label: Int,
-) {
+enum class TabDestination(@param:DrawableRes val icon: Int, @param:StringRes val label: Int) {
     Search(CoreR.drawable.ic_search, CoreR.string.search),
     Home(CoreR.drawable.ic_home, CoreR.string.title_home),
     Libraries(CoreR.drawable.ic_library, CoreR.string.libraries),
     // LiveTV(CoreR.drawable.ic_tv, CoreR.string.live_tv)
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun MainScreenLayout(
     uiState: MainViewModel.UiState,
-    navigator: DestinationsNavigator,
+    navigateToSettings: () -> Unit,
+    navigateToLibrary: (libraryId: UUID, libraryName: String, libraryType: CollectionType) -> Unit,
+    navigateToMovie: (itemId: UUID) -> Unit,
+    navigateToShow: (itemId: UUID) -> Unit,
+    navigateToPlayer: (itemId: UUID, itemKind: BaseItemKind) -> Unit,
 ) {
     var focusedTabIndex by rememberSaveable { mutableIntStateOf(1) }
     var activeTabIndex by rememberSaveable { mutableIntStateOf(focusedTabIndex) }
@@ -97,23 +105,18 @@ private fun MainScreenLayout(
         else -> Unit
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize(),
-    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp)
-                .padding(horizontal = MaterialTheme.spacings.default),
+            modifier =
+                Modifier.fillMaxWidth()
+                    .height(80.dp)
+                    .padding(horizontal = MaterialTheme.spacings.default)
         ) {
             Icon(
                 painter = painterResource(id = CoreR.drawable.ic_logo),
                 contentDescription = null,
                 tint = Color.Unspecified,
-                modifier = Modifier
-                    .size(32.dp)
-                    .align(Alignment.CenterStart),
+                modifier = Modifier.size(32.dp).align(Alignment.CenterStart),
             )
             TabRow(
                 selectedTabIndex = focusedTabIndex,
@@ -140,17 +143,24 @@ private fun MainScreenLayout(
                     Tab(
                         selected = activeTabIndex == index,
                         onFocus = { focusedTabIndex = index },
-                        colors = TabDefaults.pillIndicatorTabColors(
-                            contentColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-                            selectedContentColor = MaterialTheme.colorScheme.onPrimary,
-                            focusedContentColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
-                            focusedSelectedContentColor = MaterialTheme.colorScheme.onPrimary,
-                        ),
+                        colors =
+                            TabDefaults.pillIndicatorTabColors(
+                                contentColor =
+                                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                                selectedContentColor = MaterialTheme.colorScheme.onPrimary,
+                                focusedContentColor =
+                                    MaterialTheme.colorScheme.onBackground.copy(alpha = 0.8f),
+                                focusedSelectedContentColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
                         onClick = {
                             focusedTabIndex = index
                             activeTabIndex = index
                         },
-                        modifier = Modifier.padding(horizontal = MaterialTheme.spacings.default / 2, vertical = MaterialTheme.spacings.small),
+                        modifier =
+                            Modifier.padding(
+                                horizontal = MaterialTheme.spacings.default / 2,
+                                vertical = MaterialTheme.spacings.small,
+                            ),
                     ) {
                         Icon(
                             painter = painterResource(id = tab.icon),
@@ -172,20 +182,20 @@ private fun MainScreenLayout(
                 if (isLoading) {
                     LoadingIndicator()
                 }
-                ProfileButton(
-                    user = user,
-                    onClick = {
-                        navigator.navigate(SettingsScreenDestination())
-                    },
-                )
+                ProfileButton(user = user, onClick = { navigateToSettings() })
             }
         }
         when (activeTabIndex) {
             1 -> {
-                HomeScreen(navigator = navigator, isLoading = { isLoading = it })
+                HomeScreen(
+                    navigateToMovie = navigateToMovie,
+                    navigateToShow = navigateToShow,
+                    navigateToPlayer = navigateToPlayer,
+                    isLoading = { isLoading = it },
+                )
             }
             2 -> {
-                LibrariesScreen(navigator = navigator, isLoading = { isLoading = it })
+                MediaScreen(navigateToLibrary = navigateToLibrary, isLoading = { isLoading = it })
             }
         }
     }
@@ -197,7 +207,11 @@ private fun MainScreenLayoutPreview() {
     FindroidTheme {
         MainScreenLayout(
             uiState = MainViewModel.UiState.Normal(server = dummyServer, user = dummyUser),
-            navigator = EmptyDestinationsNavigator,
+            navigateToSettings = {},
+            navigateToLibrary = { _, _, _ -> },
+            navigateToMovie = {},
+            navigateToShow = {},
+            navigateToPlayer = { _, _ -> },
         )
     }
 }

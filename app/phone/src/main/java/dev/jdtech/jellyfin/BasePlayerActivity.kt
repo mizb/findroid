@@ -8,13 +8,12 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.updatePadding
-import androidx.media3.exoplayer.trackselection.MappingTrackSelector
 import androidx.media3.session.MediaSession
-import dev.jdtech.jellyfin.viewmodels.PlayerActivityViewModel
+import dev.jdtech.jellyfin.player.local.presentation.PlayerViewModel
 
 abstract class BasePlayerActivity : AppCompatActivity() {
 
-    abstract val viewModel: PlayerActivityViewModel
+    abstract val viewModel: PlayerViewModel
 
     private lateinit var mediaSession: MediaSession
     private var wasPip: Boolean = false
@@ -47,8 +46,9 @@ abstract class BasePlayerActivity : AppCompatActivity() {
         if (isInPictureInPictureMode) {
             wasPip = true
         } else {
-            viewModel.playWhenReady = viewModel.player.playWhenReady == true
+            viewModel.playWhenReady = viewModel.player.playWhenReady
             viewModel.player.playWhenReady = false
+            viewModel.updatePlaybackProgress()
         }
     }
 
@@ -70,19 +70,6 @@ abstract class BasePlayerActivity : AppCompatActivity() {
 
         window.attributes.layoutInDisplayCutoutMode =
             WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-    }
-
-    protected fun isRendererType(
-        mappedTrackInfo: MappingTrackSelector.MappedTrackInfo,
-        rendererIndex: Int,
-        type: Int,
-    ): Boolean {
-        val trackGroupArray = mappedTrackInfo.getTrackGroups(rendererIndex)
-        if (trackGroupArray.length == 0) {
-            return false
-        }
-        val trackType = mappedTrackInfo.getRendererType(rendererIndex)
-        return type == trackType
     }
 
     protected fun configureInsets(playerControls: View) {

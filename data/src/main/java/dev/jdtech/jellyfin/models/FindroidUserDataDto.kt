@@ -1,12 +1,9 @@
 package dev.jdtech.jellyfin.models
 
-import androidx.room.Entity
+import androidx.room3.Entity
 import java.util.UUID
 
-@Entity(
-    tableName = "userdata",
-    primaryKeys = ["userId", "itemId"],
-)
+@Entity(tableName = "userdata", primaryKeys = ["userId", "itemId"])
 data class FindroidUserDataDto(
     val userId: UUID,
     val itemId: UUID,

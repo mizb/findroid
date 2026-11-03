@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.height
 import androidx.compose.ui.unit.width
 import androidx.compose.ui.zIndex
-import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.TabRow
 
@@ -35,7 +34,6 @@ import androidx.tv.material3.TabRow
  *
  * This component is adapted from androidx.tv.material3.TabRowDefaults.PillIndicator
  */
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun PillBorderIndicator(
     currentTabPosition: DpRect,
@@ -44,15 +42,11 @@ fun PillBorderIndicator(
     activeBorderColor: Color = MaterialTheme.colorScheme.onSurface,
     inactiveBorderColor: Color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f),
 ) {
-    val width by animateDpAsState(
-        targetValue = currentTabPosition.width,
-        label = "PillIndicator.width",
-    )
+    val width by
+        animateDpAsState(targetValue = currentTabPosition.width, label = "PillIndicator.width")
     val height = currentTabPosition.height
-    val leftOffset by animateDpAsState(
-        targetValue = currentTabPosition.left,
-        label = "PillIndicator.leftOffset",
-    )
+    val leftOffset by
+        animateDpAsState(targetValue = currentTabPosition.left, label = "PillIndicator.leftOffset")
     val topOffset = currentTabPosition.top
 
     val borderColor by
@@ -69,6 +63,6 @@ fun PillBorderIndicator(
             .width(width)
             .height(height)
             .border(width = 4.dp, color = borderColor, shape = RoundedCornerShape(50))
-            .zIndex(-1f),
+            .zIndex(-1f)
     )
 }

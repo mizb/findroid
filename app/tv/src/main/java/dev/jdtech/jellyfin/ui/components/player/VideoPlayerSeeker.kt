@@ -15,17 +15,15 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.IconButton
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import dev.jdtech.jellyfin.ui.theme.FindroidTheme
-import dev.jdtech.jellyfin.ui.theme.spacings
-import kotlin.time.Duration
 import dev.jdtech.jellyfin.core.R as CoreR
+import dev.jdtech.jellyfin.presentation.theme.FindroidTheme
+import dev.jdtech.jellyfin.presentation.theme.spacings
+import kotlin.time.Duration
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun VideoPlayerSeeker(
     focusRequester: FocusRequester,
@@ -36,30 +34,24 @@ fun VideoPlayerSeeker(
     contentProgress: Duration,
     contentDuration: Duration,
 ) {
-    val contentProgressString =
-        contentProgress.toComponents { h, m, s, _ ->
-            if (h > 0) {
-                "$h:${m.padStartWith0()}:${s.padStartWith0()}"
-            } else {
-                "${m.padStartWith0()}:${s.padStartWith0()}"
-            }
+    val contentProgressString = contentProgress.toComponents { h, m, s, _ ->
+        if (h > 0) {
+            "$h:${m.padStartWith0()}:${s.padStartWith0()}"
+        } else {
+            "${m.padStartWith0()}:${s.padStartWith0()}"
         }
-    val contentDurationString =
-        contentDuration.toComponents { h, m, s, _ ->
-            if (h > 0) {
-                "$h:${m.padStartWith0()}:${s.padStartWith0()}"
-            } else {
-                "${m.padStartWith0()}:${s.padStartWith0()}"
-            }
+    }
+    val contentDurationString = contentDuration.toComponents { h, m, s, _ ->
+        if (h > 0) {
+            "$h:${m.padStartWith0()}:${s.padStartWith0()}"
+        } else {
+            "${m.padStartWith0()}:${s.padStartWith0()}"
         }
+    }
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
         IconButton(
-            onClick = {
-                onPlayPauseToggle(!isPlaying)
-            },
+            onClick = { onPlayPauseToggle(!isPlaying) },
             modifier = Modifier.focusRequester(focusRequester),
         ) {
             if (!isPlaying) {

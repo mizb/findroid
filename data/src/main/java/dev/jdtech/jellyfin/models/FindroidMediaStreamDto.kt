@@ -1,16 +1,13 @@
 package dev.jdtech.jellyfin.models
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-import org.jellyfin.sdk.model.api.MediaStreamType
+import androidx.room3.Entity
+import androidx.room3.PrimaryKey
 import java.util.UUID
+import org.jellyfin.sdk.model.api.MediaStreamType
 
-@Entity(
-    tableName = "mediastreams",
-)
+@Entity(tableName = "mediastreams")
 data class FindroidMediaStreamDto(
-    @PrimaryKey
-    val id: UUID,
+    @PrimaryKey val id: UUID,
     val sourceId: String,
     val title: String,
     val displayTitle: String?,
@@ -27,7 +24,11 @@ data class FindroidMediaStreamDto(
     val downloadId: Long? = null,
 )
 
-fun FindroidMediaStream.toFindroidMediaStreamDto(id: UUID, sourceId: String, path: String): FindroidMediaStreamDto {
+fun FindroidMediaStream.toFindroidMediaStreamDto(
+    id: UUID,
+    sourceId: String,
+    path: String,
+): FindroidMediaStreamDto {
     return FindroidMediaStreamDto(
         id = id,
         sourceId = sourceId,
@@ -39,7 +40,7 @@ fun FindroidMediaStream.toFindroidMediaStreamDto(id: UUID, sourceId: String, pat
         isExternal = isExternal,
         path = path,
         channelLayout = channelLayout,
-        videoRangeType = videoRangeType,
+        videoRangeType = videoRangeType?.name,
         height = height,
         width = width,
         videoDoViTitle = videoDoViTitle,

@@ -1,79 +1,53 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose.compiler)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.androidx.navigation.safeargs)
     alias(libs.plugins.hilt)
-    alias(libs.plugins.ktlint)
 }
+
+java { toolchain { languageVersion = Versions.JAVA } }
 
 android {
     namespace = "dev.jdtech.jellyfin.core"
-    compileSdk = Versions.compileSdk
-    buildToolsVersion = Versions.buildTools
+    compileSdk = Versions.COMPILE_SDK
+    buildToolsVersion = Versions.BUILD_TOOLS
 
-    defaultConfig {
-        minSdk = Versions.minSdk
-    }
+    defaultConfig { minSdk = Versions.MIN_SDK }
 
     buildTypes {
-        named("release") {
-            isMinifyEnabled = false
-        }
-        register("staging") {
-            initWith(getByName("release"))
-        }
+        named("release") { isMinifyEnabled = false }
+        register("staging") { initWith(getByName("release")) }
     }
 
     flavorDimensions += "variant"
-    productFlavors {
-        register("libre")
-    }
+    productFlavors { register("libre") }
 
-    compileOptions {
-        sourceCompatibility = Versions.java
-        targetCompatibility = Versions.java
-    }
-
-    buildFeatures {
-        compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = Versions.composeCompiler
-    }
-}
-
-ktlint {
-    version.set(Versions.ktlint)
-    android.set(true)
-    ignoreFailures.set(false)
+    buildFeatures { compose = true }
 }
 
 dependencies {
-    val composeBom = platform(libs.androidx.compose.bom)
-
     implementation(projects.data)
-    implementation(projects.preferences)
     implementation(projects.player.core)
-    implementation(libs.androidx.activity)
+    implementation(projects.settings)
     implementation(libs.androidx.appcompat)
-    implementation(composeBom)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.core)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
-    implementation(libs.androidx.lifecycle.runtime)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel)
-    implementation(libs.androidx.navigation.fragment)
+    implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.paging)
-    implementation(libs.androidx.preference)
-    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room3.runtime)
     implementation(libs.androidx.work)
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.jellyfin.core)
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.material)
+    implementation(libs.okhttp)
     implementation(libs.timber)
+    implementation(libs.slf4j.api)
+    implementation(libs.slf4j.android)
 }

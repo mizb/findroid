@@ -1,12 +1,15 @@
-@file:Suppress("Unused")
-
 package dev.jdtech.jellyfin.models
 
 data class VideoMetadata(
+    val size: Long,
+    val videoTracks: List<String>,
+    val audioTracks: List<String>,
+    val subtitleTracks: List<String>,
     val resolution: List<Resolution>,
+    val videoCodecs: List<VideoCodec?>,
     val displayProfiles: List<DisplayProfile>,
     val audioChannels: List<AudioChannel>,
-    val audioCodecs: List<AudioCodec>,
+    val audioCodecs: List<AudioCodec?>,
     val isAtmos: List<Boolean>,
 )
 
@@ -16,10 +19,19 @@ enum class Resolution(val raw: String) {
     UHD("4K"),
 }
 
+enum class VideoCodec(val raw: String) {
+    H264("H.264"),
+    HEVC("HEVC"),
+    VVC("VVC"),
+    AV1("AV1");
+
+    override fun toString() = super.toString().lowercase()
+}
+
 enum class DisplayProfile(val raw: String) {
     SDR("SDR"),
-    HDR("HDR"),
     HDR10("HDR10"),
+    HDR10_PLUS("HDR10+"),
     DOLBY_VISION("Vision"),
     HLG("HLG"),
 }
@@ -40,8 +52,7 @@ enum class AudioCodec(val raw: String) {
     VORBIS("VORBIS"),
     DTS("DTS"),
     TRUEHD("TrueHD"),
-    OPUS("OPUS"),
-    ;
+    OPUS("OPUS");
 
     override fun toString() = super.toString().lowercase()
 }

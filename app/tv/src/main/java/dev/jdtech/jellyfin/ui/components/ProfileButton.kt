@@ -17,62 +17,44 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.Border
 import androidx.tv.material3.ClickableSurfaceDefaults
-import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Icon
 import androidx.tv.material3.Surface
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
+import coil3.compose.AsyncImage
 import dev.jdtech.jellyfin.api.JellyfinApi
 import dev.jdtech.jellyfin.core.R
+import dev.jdtech.jellyfin.core.presentation.dummy.dummyUser
 import dev.jdtech.jellyfin.models.User
-import dev.jdtech.jellyfin.ui.dummy.dummyUser
-import dev.jdtech.jellyfin.ui.theme.FindroidTheme
+import dev.jdtech.jellyfin.presentation.theme.FindroidTheme
 import org.jellyfin.sdk.model.api.ImageType
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun ProfileButton(
-    user: User?,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+fun ProfileButton(user: User?, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val baseUrl = JellyfinApi.getInstance(context).api.baseUrl
     Surface(
-        onClick = {
-            onClick()
-        },
-        colors = ClickableSurfaceDefaults.colors(
-            containerColor = Color.Transparent,
-            focusedContainerColor = Color.Transparent,
-        ),
-        border = ClickableSurfaceDefaults.border(
-            border = Border(BorderStroke(1.dp, Color.White), shape = CircleShape),
-            focusedBorder = Border(BorderStroke(4.dp, Color.White), shape = CircleShape),
-        ),
-        shape = ClickableSurfaceDefaults.shape(
-            shape = CircleShape,
-            focusedShape = CircleShape,
-        ),
-        modifier = modifier
-            .width(32.dp)
-            .aspectRatio(1f),
+        onClick = { onClick() },
+        colors =
+            ClickableSurfaceDefaults.colors(
+                containerColor = Color.Transparent,
+                focusedContainerColor = Color.Transparent,
+            ),
+        border =
+            ClickableSurfaceDefaults.border(
+                border = Border(BorderStroke(1.dp, Color.White), shape = CircleShape),
+                focusedBorder = Border(BorderStroke(4.dp, Color.White), shape = CircleShape),
+            ),
+        shape = ClickableSurfaceDefaults.shape(shape = CircleShape, focusedShape = CircleShape),
+        modifier = modifier.width(32.dp).aspectRatio(1f),
     ) {
         Icon(
             painter = painterResource(id = R.drawable.ic_user),
             contentDescription = null,
             tint = Color.White,
-            modifier = Modifier
-                .width(16.dp)
-                .height(16.dp)
-                .align(Alignment.Center),
+            modifier = Modifier.width(16.dp).height(16.dp).align(Alignment.Center),
         )
         user?.let {
             AsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data("$baseUrl/users/${user.id}/Images/${ImageType.PRIMARY}")
-                    .crossfade(true)
-                    .build(),
+                model = "$baseUrl/users/${user.id}/Images/${ImageType.PRIMARY}",
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
@@ -84,10 +66,5 @@ fun ProfileButton(
 @Preview
 @Composable
 private fun ProfileButtonPreview() {
-    FindroidTheme {
-        ProfileButton(
-            user = dummyUser,
-            onClick = {},
-        )
-    }
+    FindroidTheme { ProfileButton(user = dummyUser, onClick = {}) }
 }

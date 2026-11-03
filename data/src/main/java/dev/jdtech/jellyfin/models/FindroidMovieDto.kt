@@ -1,14 +1,13 @@
 package dev.jdtech.jellyfin.models
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
+import androidx.room3.Entity
+import androidx.room3.PrimaryKey
 import java.time.LocalDateTime
 import java.util.UUID
 
 @Entity(tableName = "movies")
 data class FindroidMovieDto(
-    @PrimaryKey
-    val id: UUID,
+    @PrimaryKey val id: UUID,
     val serverId: String?,
     val name: String,
     val originalTitle: String?,
